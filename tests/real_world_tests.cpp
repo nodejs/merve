@@ -1133,6 +1133,18 @@ TEST(real_world_tests, exports_shorthand_syntax) {
   SUCCEED();
 }
 
+TEST(real_world_tests, exports_shorthand_syntax_get) {
+  auto result = lexer::parse_commonjs("\
+    const get = 1, set = 2;\
+    module.exports = { get, set };\
+  ");
+  ASSERT_TRUE(result.has_value());
+  ASSERT_EQ(result->exports.size(), 2);
+  ASSERT_EQ(lexer::get_string_view(result->exports[0]), "get");
+  ASSERT_EQ(lexer::get_string_view(result->exports[1]), "set");
+  SUCCEED();
+}
+
 TEST(real_world_tests, line_numbers_lf) {
   auto result = lexer::parse_commonjs(
     "// line 1\n"
