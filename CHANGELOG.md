@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/nodejs/merve/compare/v1.1.3...v1.2.0) (2026-03-05)
+
+
+### Features
+
+* add optional parse error locations ([#34](https://github.com/nodejs/merve/issues/34)) ([1b517e9](https://github.com/nodejs/merve/commit/1b517e971ecf2ea43d8c619a6637c4eea4494714))
+
+
+### Bug Fixes
+
+* don't bail on shorthand 'get' in literal exports ([#37](https://github.com/nodejs/merve/issues/37)) ([48bbbbf](https://github.com/nodejs/merve/commit/48bbbbf0be191fa2c02d284e71833088c1531521))
+
 ## [1.1.3](https://github.com/nodejs/merve/compare/v1.1.2...v1.1.3) (2026-02-27)
 
 
