@@ -42,8 +42,10 @@ merve_analysis merve_parse_commonjs(const char* input, size_t length,
   }
 
   if (!impl->result.has_value() && out_err) {
-    if (const auto& err_loc = lexer::get_last_error_location()) {
-      merve_error_loc_set(out_err, *err_loc);
+    const std::optional<lexer::error_location>& err_loc =
+        lexer::get_last_error_location();
+    if (err_loc.has_value()) {
+      merve_error_loc_set(out_err, err_loc.value());
     }
   }
 
@@ -80,7 +82,8 @@ merve_string merve_get_export_name(merve_analysis result, size_t index) {
   if (!impl->result.has_value()) return merve_string_create(nullptr, 0);
   if (index >= impl->result->exports.size())
     return merve_string_create(nullptr, 0);
-  std::string_view sv = lexer::get_string_view(impl->result->exports[index]);
+  std::string_view sv =
+      lexer::get_string_view(impl->result->exports[index]);
   return merve_string_create(sv.data(), sv.size());
 }
 
@@ -98,7 +101,8 @@ merve_string merve_get_reexport_name(merve_analysis result, size_t index) {
   if (!impl->result.has_value()) return merve_string_create(nullptr, 0);
   if (index >= impl->result->re_exports.size())
     return merve_string_create(nullptr, 0);
-  std::string_view sv = lexer::get_string_view(impl->result->re_exports[index]);
+  std::string_view sv =
+      lexer::get_string_view(impl->result->re_exports[index]);
   return merve_string_create(sv.data(), sv.size());
 }
 
@@ -126,4 +130,4 @@ merve_version_components merve_get_version_components(void) {
   return vc;
 }
 
-} /* extern "C" */
+}  /* extern "C" */
