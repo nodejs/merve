@@ -314,6 +314,40 @@ struct StarExportBinding {
 
 // Thread-local state for error tracking (safe for concurrent parse calls).
 thread_local std::optional<lexer_error> last_error;
+thread_local std::optional<error_location> last_error_location;
+
+static error_location makeErrorLocation(const char* source, const char* end, const char* at) {
+  const char* target = at;
+  if (target < source) target = source;
+  if (target > end) target = end;
+
+  uint32_t line = 1;
+  uint32_t column = 1;
+  const char* cur = source;
+
+  while (cur < target) {
+    const char ch = *cur++;
+    if (ch == '\n') {
+      line++;
+      column = 1;
+      continue;
+    }
+    if (ch == '\r') {
+      line++;
+      column = 1;
+      if (cur < target && *cur == '\n') {
+        cur++;
+      }
+      continue;
+    }
+    column++;
+  }
+
+  error_location loc{};
+  loc.line = line;
+  loc.column = column;
+  return loc;
+}
 
 // Lexer state class
 class CJSLexer {
@@ -334,6 +368,7 @@ private:
 
   std::array<uint16_t, STACK_DEPTH> templateStack_;
   std::array<const char*, STACK_DEPTH> openTokenPosStack_;
+  std::array<char, STACK_DEPTH> openTokenTypeStack_;
   std::array<bool, STACK_DEPTH> openClassPosStack;
   std::array<StarExportBinding, MAX_STAR_EXPORTS> starExportStack_;
   StarExportBinding* starExportStack;
@@ -485,9 +520,11 @@ private:
   }
 
   // Parsing utilities
-  void syntaxError(lexer_error code) {
+  void syntaxError(lexer_error code, const char* at = nullptr) {
     if (!last_error) {
       last_error = code;
+      const char* error_pos = at ? at : pos;
+      last_error_location = makeErrorLocation(source, end, error_pos);
     }
     pos = end + 1;
   }
@@ -1490,6 +1527,7 @@ private:
     char ch = commentWhitespace();
     switch (ch) {
       case '(':
+        openTokenTypeStack_[openTokenDepth] = '(';
         openTokenPosStack_[openTokenDepth++] = startPos;
         return;
       case '.':
@@ -1503,7 +1541,7 @@ private:
             // It's something like import.metaData, not import.meta
             return;
           }
-          syntaxError(lexer_error::UNEXPECTED_ESM_IMPORT_META);
+          syntaxError(lexer_error::UNEXPECTED_ESM_IMPORT_META, startPos);
         }
         return;
       default:
@@ -1518,17 +1556,18 @@ private:
           pos--;
           return;
         }
-        syntaxError(lexer_error::UNEXPECTED_ESM_IMPORT);
+        syntaxError(lexer_error::UNEXPECTED_ESM_IMPORT, startPos);
     }
   }
 
   void throwIfExportStatement() {
+    const char* startPos = pos;
     pos += 6;
     const char* curPos = pos;
     char ch = commentWhitespace();
     if (pos == curPos && !isPunctuator(ch))
       return;
-    syntaxError(lexer_error::UNEXPECTED_ESM_EXPORT);
+    syntaxError(lexer_error::UNEXPECTED_ESM_EXPORT, startPos);
   }
 
 public:
@@ -1537,7 +1576,7 @@ public:
       templateStackDepth(0), openTokenDepth(0), templateDepth(0),
       line(1),
       lastSlashWasDivision(false), nextBraceIsClass(false),
-      templateStack_{}, openTokenPosStack_{}, openClassPosStack{},
+      templateStack_{}, openTokenPosStack_{}, openTokenTypeStack_{}, openClassPosStack{},
       starExportStack_{}, starExportStack(nullptr), STAR_EXPORT_STACK_END(nullptr),
       exports(out_exports), re_exports(out_re_exports) {}
 
@@ -1602,6 +1641,7 @@ public:
               pos += 23;
               if (*pos == '(') {
                 pos++;
+                openTokenTypeStack_[openTokenDepth] = '(';
                 openTokenPosStack_[openTokenDepth++] = lastTokenPos;
                 if (tryParseRequire(RequireType::Import) && keywordStart(startPos))
                   tryBacktrackAddStarExportBinding(startPos - 1);
@@ -1611,6 +1651,7 @@ public:
               if (pos + 4 < end && matchesAt(pos, end, "Star"))
                 pos += 4;
               if (*pos == '(') {
+                openTokenTypeStack_[openTokenDepth] = '(';
                 openTokenPosStack_[openTokenDepth++] = lastTokenPos;
                 if (*(pos + 1) == 'r') {
                   pos++;
@@ -1645,6 +1686,7 @@ public:
             tryParseObjectDefineOrKeys(openTokenDepth == 0);
           break;
         case '(':
+          openTokenTypeStack_[openTokenDepth] = '(';
           openTokenPosStack_[openTokenDepth++] = lastTokenPos;
           break;
         case ')':
@@ -1657,6 +1699,7 @@ public:
         case '{':
           openClassPosStack[openTokenDepth] = nextBraceIsClass;
           nextBraceIsClass = false;
+          openTokenTypeStack_[openTokenDepth] = '{';
           openTokenPosStack_[openTokenDepth++] = lastTokenPos;
           break;
         case '}':
@@ -1719,6 +1762,19 @@ public:
       lastTokenPos = pos;
     }
 
+    if (!last_error) {
+      if (templateDepth != std::numeric_limits<uint16_t>::max()) {
+        syntaxError(lexer_error::UNTERMINATED_TEMPLATE_STRING, end);
+      } else if (openTokenDepth != 0) {
+        const char open_ch = openTokenTypeStack_[openTokenDepth - 1];
+        if (open_ch == '{') {
+          syntaxError(lexer_error::UNTERMINATED_BRACE, end);
+        } else {
+          syntaxError(lexer_error::UNTERMINATED_PAREN, end);
+        }
+      }
+    }
+
     if (templateDepth != std::numeric_limits<uint16_t>::max() || openTokenDepth || last_error) {
       return false;
     }
@@ -1729,6 +1785,7 @@ public:
 
 std::optional<lexer_analysis> parse_commonjs(std::string_view file_contents) {
   last_error.reset();
+  last_error_location.reset();
 
   lexer_analysis result;
   CJSLexer lexer(result.exports, result.re_exports);
@@ -1742,6 +1799,10 @@ std::optional<lexer_analysis> parse_commonjs(std::string_view file_contents) {
 
 const std::optional<lexer_error>& get_last_error() {
   return last_error;
+}
+
+const std::optional<error_location>& get_last_error_location() {
+  return last_error_location;
 }
 
 }  // namespace lexer
@@ -1796,6 +1857,19 @@ typedef struct {
   int revision;
 } merve_version_components;
 
+/**
+ * @brief Source location for a parse error.
+ *
+ * - line and column are 1-based.
+ * - column is byte-oriented.
+ *
+ * A zeroed location (`{0, 0}`) means the location is unavailable.
+ */
+typedef struct {
+  uint32_t line;
+  uint32_t column;
+} merve_error_loc;
+
 /* Error codes corresponding to lexer::lexer_error values. */
 #define MERVE_ERROR_TODO 0
 #define MERVE_ERROR_UNEXPECTED_PAREN 1
@@ -1816,20 +1890,32 @@ extern "C" {
 #endif
 
 /**
- * Parse CommonJS source code and extract export information.
+ * Parse CommonJS source code and optionally return error location.
  *
  * The source buffer must remain valid while accessing string_view-backed
  * export names from the returned handle.
  *
+ * If @p out_err is non-NULL, it is always written:
+ * - On success: set to {0, 0}.
+ * - On parse failure with known location: set to that location.
+ * - On parse failure without available location: set to {0, 0}.
+ *
  * You must call merve_free() on the returned handle when done.
  *
- * @param input  Pointer to the JavaScript source (need not be null-terminated).
- *               NULL is treated as an empty string.
- * @param length Length of the input in bytes.
+ * @param input   Pointer to the JavaScript source (need not be
+ *                null-terminated). NULL is treated as an empty string.
+ * @param length  Length of the input in bytes.
+ * @param out_err Optional output pointer for parse error location.
  * @return A handle to the parse result, or NULL on out-of-memory.
  *         Use merve_is_valid() to check if parsing succeeded.
  */
-merve_analysis merve_parse_commonjs(const char* input, size_t length);
+#ifdef __cplusplus
+merve_analysis merve_parse_commonjs(const char* input, size_t length,
+                                    merve_error_loc* out_err = nullptr);
+#else
+merve_analysis merve_parse_commonjs(const char* input, size_t length,
+                                    merve_error_loc* out_err);
+#endif
 
 /**
  * Check whether the parse result is valid (parsing succeeded).
@@ -1922,7 +2008,7 @@ const char* merve_get_version(void);
 merve_version_components merve_get_version_components(void);
 
 #ifdef __cplusplus
-}  /* extern "C" */
+} /* extern "C" */
 #endif
 
 #endif /* MERVE_C_H */
@@ -1941,9 +2027,25 @@ static merve_string merve_string_create(const char* data, size_t length) {
   return out;
 }
 
+static void merve_error_loc_clear(merve_error_loc* out_err) {
+  if (!out_err) return;
+  out_err->line = 0;
+  out_err->column = 0;
+}
+
+static void merve_error_loc_set(merve_error_loc* out_err,
+                                const lexer::error_location& loc) {
+  if (!out_err) return;
+  out_err->line = loc.line;
+  out_err->column = loc.column;
+}
+
 extern "C" {
 
-merve_analysis merve_parse_commonjs(const char* input, size_t length) {
+merve_analysis merve_parse_commonjs(const char* input, size_t length,
+                                    merve_error_loc* out_err) {
+  merve_error_loc_clear(out_err);
+
   merve_analysis_impl* impl = new (std::nothrow) merve_analysis_impl();
   if (!impl) return nullptr;
   if (input != nullptr) {
@@ -1951,6 +2053,15 @@ merve_analysis merve_parse_commonjs(const char* input, size_t length) {
   } else {
     impl->result = lexer::parse_commonjs(std::string_view("", 0));
   }
+
+  if (!impl->result.has_value() && out_err) {
+    const std::optional<lexer::error_location>& err_loc =
+        lexer::get_last_error_location();
+    if (err_loc.has_value()) {
+      merve_error_loc_set(out_err, err_loc.value());
+    }
+  }
+
   return static_cast<merve_analysis>(impl);
 }
 
