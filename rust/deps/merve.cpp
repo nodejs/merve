@@ -812,20 +812,14 @@ private:
         const char* endPos = pos;
         ch = commentWhitespace();
 
-        // Check if this is a getter syntax: get identifier()
-        if (ch != ':' && endPos - startPos == 3 && matchesAt(startPos, end, "get")) {
-          // Skip getter: get identifier() { ... }
-          if (identifier(ch)) {
-            ch = commentWhitespace();
-            if (ch == '(') {
-              // This is a getter, stop parsing here (early termination)
-              pos = revertPos;
-              return;
-            }
+        // Check if this is a getter syntax: get identifier() { ... }
+        if (ch != ':' && endPos - startPos == 3 && matchesAt(startPos, end, "get") && identifier(ch)) {
+          ch = commentWhitespace();
+          if (ch == '(') {
+            // This is a getter, stop parsing here (early termination)
+            pos = revertPos;
+            return;
           }
-          // Not a getter, revert and fail
-          pos = revertPos;
-          return;
         }
 
         if (ch == ':') {
