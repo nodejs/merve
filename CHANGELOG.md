@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.3.0](https://github.com/nodejs/merve/compare/v1.2.2...v1.3.0) (2026-03-11)
+
+
+### Features
+
+* add C API ([#12](https://github.com/nodejs/merve/issues/12)) ([db663af](https://github.com/nodejs/merve/commit/db663af49b6c196003b455776fcd71183353ef14))
+* add optional parse error locations ([#34](https://github.com/nodejs/merve/issues/34)) ([1b517e9](https://github.com/nodejs/merve/commit/1b517e971ecf2ea43d8c619a6637c4eea4494714))
+* add rust crate ([c964cd5](https://github.com/nodejs/merve/commit/c964cd5461709fc01a397c3a5febad25422768ff))
+* initial commit ([55fdeca](https://github.com/nodejs/merve/commit/55fdeca11d8543ebd947aaad54731d383203093f))
+
+
+### Bug Fixes
+
+* add changed cargo.lock on publish ([#45](https://github.com/nodejs/merve/issues/45)) ([514f543](https://github.com/nodejs/merve/commit/514f5431704eb6b07cafd8675d1187cdc3d96c96))
+* don't bail on shorthand 'get' in literal exports ([#37](https://github.com/nodejs/merve/issues/37)) ([48bbbbf](https://github.com/nodejs/merve/commit/48bbbbf0be191fa2c02d284e71833088c1531521))
+* handle immutable releases ([#21](https://github.com/nodejs/merve/issues/21)) ([13480bc](https://github.com/nodejs/merve/commit/13480bc56ed56b1e2778d4fee1d0562e811b09eb))
+* header file name ([#6](https://github.com/nodejs/merve/issues/6)) ([d499aa9](https://github.com/nodejs/merve/commit/d499aa984deebff754bf4ed09ac89aeebadcdcaa))
+* prevent out-of-bounds read in tryBacktrackAddStarExportBinding ([#41](https://github.com/nodejs/merve/issues/41)) ([4d450dc](https://github.com/nodejs/merve/commit/4d450dc69934f0f49e9529cb26c6fcfa3f6303bf))
+* **rust:** encode non-zero line invariant in API ([#31](https://github.com/nodejs/merve/issues/31)) ([9966022](https://github.com/nodejs/merve/commit/9966022893140e6cd812ae21991421ea2ecbcdc0))
+* simplify things in rust crate ([f4e857e](https://github.com/nodejs/merve/commit/f4e857e7d74ded0437b696e776ac8ef12554b483))
+* tie rust export borrows to analysis lifetime ([0fed125](https://github.com/nodejs/merve/commit/0fed1256bbbee733020e1b75eb1aa7b3088b3034))
+* update release.yml ([7050760](https://github.com/nodejs/merve/commit/705076095196c3b94d6be6fa861334d997bd6cdc))
+* use thread_local last error tracking ([f529e8b](https://github.com/nodejs/merve/commit/f529e8b7406fb892bd842eb3ca13ea946b3e5f9a))
+
 ## [1.2.2](https://github.com/nodejs/merve/compare/v1.2.1...v1.2.2) (2026-03-11)
 
 
