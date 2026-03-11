@@ -1272,6 +1272,40 @@ TEST(real_world_tests, line_numbers_reexports) {
   ASSERT_EQ(result->re_exports[0].line, 2);
 }
 
+// Regression test for nodejs/node#62212:
+// SIGSEGV when parsing a CJS bundle that starts with require() at position 0.
+// tryBacktrackAddStarExportBinding was passed (source - 1) and dereferenced
+// the pointer before checking it against the source boundary.
+TEST(real_world_tests, require_at_start_of_input) {
+  // Minimal case: require() as the very first token triggers
+  // tryBacktrackAddStarExportBinding(startPos - 1) where startPos == source.
+  auto result = lexer::parse_commonjs("require('./foo')");
+  ASSERT_TRUE(result.has_value());
+
+  // Typical ncc/webpack bundle pattern that starts with require()
+  auto result2 = lexer::parse_commonjs(
+    "require('./sourcemap-register.js');"
+    "(()=>{var __webpack_modules__={"
+    "0:(module,exports,__webpack_require__)=>{"
+    "\"use strict\";"
+    "var _a=__webpack_require__(1);"
+    "exports.default=_a;"
+    "}"
+    "};"
+    "var __webpack_module_cache__={};"
+    "function __webpack_require__(id){"
+    "var c=__webpack_module_cache__[id];"
+    "if(c!==undefined)return c.exports;"
+    "var m=__webpack_module_cache__[id]={exports:{}};"
+    "__webpack_modules__[id](m,m.exports,__webpack_require__);"
+    "return m.exports;}"
+    "var __webpack_exports__=__webpack_require__(0);"
+    "module.exports=__webpack_exports__;"
+    "})();"
+  );
+  ASSERT_TRUE(result2.has_value());
+}
+
 TEST(real_world_tests, line_numbers_after_block_comment) {
   auto result = lexer::parse_commonjs(
     "/*\n"
