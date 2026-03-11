@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/nodejs/merve/compare/v1.2.0...v1.2.1) (2026-03-11)
+
+
+### Bug Fixes
+
+* prevent out-of-bounds read in tryBacktrackAddStarExportBinding ([#41](https://github.com/nodejs/merve/issues/41)) ([4d450dc](https://github.com/nodejs/merve/commit/4d450dc69934f0f49e9529cb26c6fcfa3f6303bf))
+
 ## [1.2.0](https://github.com/nodejs/merve/compare/v1.1.3...v1.2.0) (2026-03-05)
 
 
