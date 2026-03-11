@@ -79,13 +79,13 @@ jobs:
         working-directory: rust
         run: cargo test
 
-      - name: Commit rust/deps if changed
+      - name: Commit rust/deps and Cargo.lock if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add rust/deps/
+          git add rust/deps/ rust/Cargo.lock
           if git diff --cached --quiet; then
-            echo "rust/deps is up to date"
+            echo "rust/deps and Cargo.lock are up to date"
           else
             git commit -m "chore: update rust/deps vendored sources [skip ci]"
             git push
