@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.2](https://github.com/nodejs/merve/compare/v1.2.1...v1.2.2) (2026-03-11)
+
+
+### Bug Fixes
+
+* add changed cargo.lock on publish ([#45](https://github.com/nodejs/merve/issues/45)) ([514f543](https://github.com/nodejs/merve/commit/514f5431704eb6b07cafd8675d1187cdc3d96c96))
+
 ## [1.2.1](https://github.com/nodejs/merve/compare/v1.2.0...v1.2.1) (2026-03-11)
 
 
