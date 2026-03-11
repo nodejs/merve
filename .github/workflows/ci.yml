@@ -85,6 +85,18 @@ jobs:
             cmake_gen: Ninja
             cmake_flags: "-DMERVE_USE_SIMDUTF=ON"
             name_suffix: " (simdutf)"
+          # Ubuntu with UBSAN (GCC)
+          - os: ubuntu-22.04
+            cxx: g++-12
+            cmake_gen: Ninja
+            cmake_flags: "-DMERVE_SANITIZE_UNDEFINED=ON"
+            name_suffix: " (UBSAN)"
+          # Ubuntu with UBSAN (Clang)
+          - os: ubuntu-22.04
+            cxx: clang++-15
+            cmake_gen: Ninja
+            cmake_flags: "-DMERVE_SANITIZE_UNDEFINED=ON"
+            name_suffix: " (UBSAN)"
           # Ubuntu with simdutf + ASAN
           - os: ubuntu-latest
             cxx: g++-13
