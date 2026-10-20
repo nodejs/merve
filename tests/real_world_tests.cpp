@@ -1306,6 +1306,34 @@ TEST(real_world_tests, require_at_start_of_input) {
   ASSERT_TRUE(result2.has_value());
 }
 
+// Matches lexer::STACK_DEPTH in src/parser.cpp.
+constexpr size_t kOpenTokenStackDepth = 2048;
+
+TEST(real_world_tests, open_token_stack_depth_still_parses) {
+  std::string source(kOpenTokenStackDepth, '(');
+  source.append(kOpenTokenStackDepth, ')');
+  source += "exports.depth = 1;";
+  auto result = lexer::parse_commonjs(source);
+  ASSERT_TRUE(result.has_value());
+  ASSERT_EQ(result->exports.size(), 1);
+  ASSERT_EQ(lexer::get_string_view(result->exports[0]), "depth");
+}
+
+TEST(real_world_tests, open_token_overflow) {
+  std::string source(kOpenTokenStackDepth * 4, '(');
+  auto result = lexer::parse_commonjs(source);
+  ASSERT_FALSE(result.has_value());
+  ASSERT_EQ(lexer::get_last_error(), lexer::lexer_error::OPEN_TOKEN_OVERFLOW);
+}
+
+TEST(real_world_tests, open_token_overflow_inside_template) {
+  std::string source(kOpenTokenStackDepth, '(');
+  source += "`${";
+  auto result = lexer::parse_commonjs(source);
+  ASSERT_FALSE(result.has_value());
+  ASSERT_EQ(lexer::get_last_error(), lexer::lexer_error::OPEN_TOKEN_OVERFLOW);
+}
+
 TEST(real_world_tests, line_numbers_after_block_comment) {
   auto result = lexer::parse_commonjs(
     "/*\n"
