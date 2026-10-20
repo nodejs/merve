@@ -47,6 +47,7 @@ static void check_types(void) {
       MERVE_ERROR_UNEXPECTED_ESM_IMPORT,
       MERVE_ERROR_UNEXPECTED_ESM_EXPORT,
       MERVE_ERROR_TEMPLATE_NEST_OVERFLOW,
+      MERVE_ERROR_OPEN_TOKEN_OVERFLOW,
   };
   (void)errors;
 }
