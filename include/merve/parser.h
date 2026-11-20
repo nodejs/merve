@@ -36,6 +36,7 @@ enum lexer_error {
 
   // Resource limit errors
   TEMPLATE_NEST_OVERFLOW, ///< Template literal nesting too deep
+  OPEN_TOKEN_OVERFLOW,    ///< Parenthesis or brace nesting too deep
 };
 
 /**

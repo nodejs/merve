@@ -52,6 +52,7 @@ pub enum LexerError {
     UnexpectedEsmImport,
     UnexpectedEsmExport,
     TemplateNestOverflow,
+    OpenTokenOverflow,
     /// An error code not recognized by these bindings.
     Unknown(i32),
 }
@@ -74,6 +75,7 @@ impl LexerError {
             10 => Self::UnexpectedEsmImport,
             11 => Self::UnexpectedEsmExport,
             12 => Self::TemplateNestOverflow,
+            13 => Self::OpenTokenOverflow,
             other => Self::Unknown(other),
         }
     }
@@ -95,6 +97,7 @@ impl LexerError {
             Self::UnexpectedEsmImport => "unexpected ESM import",
             Self::UnexpectedEsmExport => "unexpected ESM export",
             Self::TemplateNestOverflow => "template nesting overflow",
+            Self::OpenTokenOverflow => "open token nesting overflow",
             Self::Unknown(_) => "unknown error",
         }
     }
@@ -531,6 +534,13 @@ mod tests {
     }
 
     #[test]
+    fn open_token_overflow() {
+        let source = "(".repeat(2048 * 4);
+        let err = parse_commonjs(&source).unwrap_err();
+        assert_eq!(err.kind, LexerError::OpenTokenOverflow);
+    }
+
+    #[test]
     fn empty_input() {
         let result = parse_commonjs("");
         assert!(result.is_err());
@@ -694,7 +704,7 @@ mod tests {
 
     #[test]
     fn error_from_code_roundtrip() {
-        for code in 0..=12 {
+        for code in 0..=13 {
             let err = LexerError::from_code(code);
             assert_ne!(err, LexerError::Unknown(code));
         }

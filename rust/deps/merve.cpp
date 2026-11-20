@@ -520,6 +520,20 @@ private:
   }
 
   // Parsing utilities
+
+  // STACK_DEPTH slots. A deeper '(' or '{' is a parse error.
+  bool pushOpenToken(char type, const char* tokenPos, bool isClass = false) {
+    if (openTokenDepth >= STACK_DEPTH) {
+      syntaxError(lexer_error::OPEN_TOKEN_OVERFLOW, tokenPos);
+      return false;
+    }
+    if (type == '{')
+      openClassPosStack[openTokenDepth] = isClass;
+    openTokenTypeStack_[openTokenDepth] = type;
+    openTokenPosStack_[openTokenDepth++] = tokenPos;
+    return true;
+  }
+
   void syntaxError(lexer_error code, const char* at = nullptr) {
     if (!last_error) {
       last_error = code;
@@ -631,6 +645,10 @@ private:
         pos++;
         if (templateStackDepth >= STACK_DEPTH) {
           syntaxError(lexer_error::TEMPLATE_NEST_OVERFLOW);
+          return;
+        }
+        if (openTokenDepth >= STACK_DEPTH) {
+          syntaxError(lexer_error::OPEN_TOKEN_OVERFLOW);
           return;
         }
         templateStack_[templateStackDepth++] = templateDepth;
@@ -1682,8 +1700,8 @@ public:
             tryParseObjectDefineOrKeys(openTokenDepth == 0);
           break;
         case '(':
-          openTokenTypeStack_[openTokenDepth] = '(';
-          openTokenPosStack_[openTokenDepth++] = lastTokenPos;
+          if (!pushOpenToken('(', lastTokenPos))
+            return false;
           break;
         case ')':
           if (openTokenDepth == 0) {
@@ -1693,10 +1711,9 @@ public:
           openTokenDepth--;
           break;
         case '{':
-          openClassPosStack[openTokenDepth] = nextBraceIsClass;
+          if (!pushOpenToken('{', lastTokenPos, nextBraceIsClass))
+            return false;
           nextBraceIsClass = false;
-          openTokenTypeStack_[openTokenDepth] = '{';
-          openTokenPosStack_[openTokenDepth++] = lastTokenPos;
           break;
         case '}':
           if (openTokenDepth == 0) {
@@ -1880,6 +1897,7 @@ typedef struct {
 #define MERVE_ERROR_UNEXPECTED_ESM_IMPORT 10
 #define MERVE_ERROR_UNEXPECTED_ESM_EXPORT 11
 #define MERVE_ERROR_TEMPLATE_NEST_OVERFLOW 12
+#define MERVE_ERROR_OPEN_TOKEN_OVERFLOW 13
 
 #ifdef __cplusplus
 extern "C" {

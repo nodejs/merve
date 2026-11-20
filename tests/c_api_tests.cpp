@@ -2,6 +2,7 @@
 
 #include "gtest/gtest.h"
 #include <cstring>
+#include <string>
 
 // Helper: compare merve_string to a C string literal.
 static bool merve_string_eq(merve_string s, const char* expected) {
@@ -480,5 +481,14 @@ TEST(c_api_tests, spread_reexports) {
   ASSERT_EQ(merve_get_reexports_count(result), 2u);
   ASSERT_TRUE(merve_string_eq(merve_get_reexport_name(result, 0), "dep1"));
   ASSERT_TRUE(merve_string_eq(merve_get_reexport_name(result, 1), "dep2"));
+  merve_free(result);
+}
+
+TEST(c_api_tests, open_token_overflow) {
+  const std::string source(2048 * 4, '(');
+  merve_analysis result = merve_parse_commonjs(source.data(), source.size());
+  ASSERT_NE(result, nullptr);
+  ASSERT_FALSE(merve_is_valid(result));
+  ASSERT_EQ(merve_get_last_error(), MERVE_ERROR_OPEN_TOKEN_OVERFLOW);
   merve_free(result);
 }
