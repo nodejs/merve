@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.3](https://github.com/nodejs/merve/compare/v1.2.2...v1.2.3) (2026-11-20)
+
+
+### Bug Fixes
+
+* reject open-token nesting past the fixed stack ([#60](https://github.com/nodejs/merve/issues/60)) ([51c735f](https://github.com/nodejs/merve/commit/51c735ffd853f1f836db19814fa9cbbab5c13fce))
+
 ## [1.2.2](https://github.com/nodejs/merve/compare/v1.2.1...v1.2.2) (2026-03-11)
 
 

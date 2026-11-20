@@ -3,10 +3,10 @@ cmake_minimum_required(VERSION 3.16)
 project(merve
   DESCRIPTION "Fast lexer to extract named exports via analysis from CommonJS modules"
   LANGUAGES C CXX
-  VERSION 1.2.2 # x-release-please-version
+  VERSION 1.2.3 # x-release-please-version
 )
 
-set(MERVE_LIB_VERSION "1.2.2" CACHE STRING "lexer library version") # x-release-please-version
+set(MERVE_LIB_VERSION "1.2.3" CACHE STRING "lexer library version") # x-release-please-version
 set(MERVE_LIB_SOVERSION "1" CACHE STRING "lexer library soversion") # x-release-please-major
 
 include(GNUInstallDirs)
@@ -83,8 +83,12 @@ if(MERVE_TESTING OR MERVE_BENCHMARKS)
   endif()
 
   if (MERVE_TESTING AND NOT EMSCRIPTEN)
+    if(Git_FOUND)
       message(STATUS "The tests are enabled.")
       add_subdirectory(tests)
+    else()
+      message(STATUS "The tests are disabled because git was not found.")
+    endif()
   else()
     if(is_top_project)
       message(STATUS "The tests are disabled.")
